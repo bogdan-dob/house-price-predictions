@@ -1,0 +1,12 @@
+CRIM - per capital crime rate
+ZN - proportion of land with lots over 25000 sq ft
+INDUS - proportion of non-retail business in acres
+CHAS - binary variable indicating whether property bounds Charles River
+NOX - nitogren oxide concentration (parts per 10 million)
+RM - avg number of rooms per home
+AGE - proportion of units built before 1940
+DIS - weighted mean of distances to five Boston employment centres
+TAX - property tax rate per $10000
+PTRATIO - pupil/teacher ratio
+LSTAT - lower status of population (%)
+MEDV - median value of homes in $1000s

@@ -4,10 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sb
 import sklearn
-from sklearn.metrics import mean_squared_error as MSE 
+from sklearn.metrics import explained_variance_score as evs 
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import BayesianRidge
 
 # load data
 df = pd.read_csv('house-data.csv')
@@ -21,6 +24,9 @@ print(df.isnull().sum())
 # instantiate the LabelEncoder
 le = LabelEncoder()
 df['CHAS'] = le.fit_transform(df['CHAS'])
+
+# summary of data
+df.info()
 
 # display statistical details about data 
 df.describe()
@@ -48,16 +54,17 @@ plt.show()
 
 y = df['MEDV']
 scatter_df = df.drop('MEDV', axis=1)
-#sample plot for only 1 dependent variable (crime) compared with the independent y variable
-sample_x = scatter_df.columns[0]
-sample_plot = sb.scatterplot(sample_x, y, data=df, color='blue', s=150)
-plt.title('{} / Median Sales Price'.format(sample_x), fontsize = 16)
-plt.xlabel('{}'.format(sample_x), fontsize = 14)
-plt.ylabel('Median Sales Price (in $1000s)', fontsize = 14)
-plt.xticks(fontsize = 12)
-plt.yticks(fontsize = 12)
-plt.savefig('scatterplot.png')
-plt.show()
+x_columns = scatter_df.columns
+
+for i in x_columns:
+    sample_plot = sb.scatterplot(i, y, data=df, color='blue', s=150)
+    plt.title('{} / Median Sales Price'.format(i), fontsize = 16)
+    plt.xlabel('{}'.format(i), fontsize = 14)
+    plt.ylabel('Median Sales Price (in $1000s)', fontsize = 14)
+    plt.xticks(fontsize = 12)
+    plt.yticks(fontsize = 12)
+    plt.savefig('scatterplot-{}.png'.format(i))
+    plt.show()
 
 # Visualization: Distribution plot
 sb.distplot(df['MEDV'], color = 'g')
@@ -69,26 +76,61 @@ plt.yticks(fontsize=12)
 plt.savefig('distplot.png')
 plt.show()
 
+print("Skewness:", df['MEDV'].skew())
+print("Kurtosis:", df['MEDV'].kurt())
+
 #split the data into training and test set to avoid overfitting
 y_var = df['MEDV'].values
 x_var = df.drop('MEDV', axis=1).values
-x_train, x_test, y_train, y_test = train_test_split(x_var, y_var, test_size=0.3)
+x_train, x_test, y_train, y_test = train_test_split(x_var, y_var, test_size=0.5, random_state=0)
 
-print(x_train.shape, y_train.shape)
+# Modelling: Random Forest Regressor
+rf = RandomForestRegressor()
+rf.fit(x_train, y_train)
+rf_yhat = rf.predict(x_test)
 
-#instantiate RandomForestRegressor
-dt = RandomForestRegressor()
-
-#fit random forest to training data
+# Modelling: Decision Tree Regressor
+dt = DecisionTreeRegressor(max_depth=8)
 dt.fit(x_train, y_train)
+dt_yhat = dt.predict(x_test)
 
-#predict output for test data
-y_predicted = dt.predict(x_test)
-# determine accuracy of prediction
-accuracy = dt.score(x_test, y_test)
-# compute the MSE value
-MSE_score = MSE(y_test, y_predicted)
+# Modelling: Linear Regression
+lr = LinearRegression()
+lr.fit(x_train, y_train)
+lr_yhat = lr.predict(x_test)
 
-print("Training Accuracy:", dt.score(x_train, y_train))
-print("Testing Accuracy:", accuracy)
-print("Mean Squared Error:", MSE_score.mean())
+# Modelling: Bayesian
+bayesian = BayesianRidge()
+bayesian.fit(x_train, y_train)
+bayesian_yhat = bayesian.predict(x_train)
+
+# Determining accuracy
+
+rf_accuracy = rf.score(x_test, y_test)
+rf_evs = evs(y_test, rf_yhat)
+
+print("Random Forest Training Accuracy:", rf.score(x_train, y_train))
+print("Random Forest Testing Accuracy:", rf_accuracy)
+print("Random Forest Explained Variance Score:", rf_evs)
+
+dt_accuracy = dt.score(x_test, y_test)
+dt_evs = evs(y_test, dt_yhat)
+
+print("Decision Tree Training Accuracy:", dt.score(x_train, y_train))
+print("Decision Tree Testing Accuracy:", dt_accuracy)
+print("Decision Tree Explained Variance Score:", dt_evs)
+
+lr_accuracy = lr.score(x_test, y_test)
+lr_evs = evs(y_test, lr_yhat)
+
+print("Linear Regression Training Accuracy:", lr.score(x_train, y_train))
+print("Linear Regression Testing Accuracy:", lr_accuracy)
+print("Linear Regression Explained Variance Score:", lr_evs)
+
+bayesian_accuracy = bayesian.score(x_test, y_test)
+bayesian_evs = evs(y_test, bayesian_yhat)
+
+print("Bayesian Training Accuracy:", bayesian.score(x_train, y_train))
+print("Bayesian Testing Accuracy:", bayesian_accuracy)
+print("Bayesian Explained Variance Score:", bayesian_evs)
+
